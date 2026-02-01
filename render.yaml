@@ -2,8 +2,8 @@ services:
   - type: web
     name: uniconvert-backend
     runtime: docker
-    dockerfilePath: ./backend/Dockerfile
-    dockerContext: ./backend
+    rootDir: backend
+    dockerfilePath: ./Dockerfile
     region: oregon
     plan: starter
     healthCheckPath: /api/health
@@ -11,7 +11,7 @@ services:
       - key: NODE_ENV
         value: production
       - key: PORT
-        value: 5000
+        value: 10000
       - key: MAX_FILE_SIZE
         value: 104857600
     disk:
@@ -22,8 +22,8 @@ services:
   - type: web
     name: uniconvert-frontend
     runtime: docker
-    dockerfilePath: ./frontend/Dockerfile
-    dockerContext: ./frontend
+    rootDir: frontend
+    dockerfilePath: ./Dockerfile
     region: oregon
     plan: starter
     envVars:
@@ -31,4 +31,6 @@ services:
         fromService:
           name: uniconvert-backend
           type: web
-          property: host
+          property: hostport
+      - key: PORT
+        value: 10000
