@@ -1,0 +1,106 @@
+.file-uploader-wrapper {
+    width: 100%;
+}
+
+.file-uploader {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    padding: 48px 32px;
+    background: linear-gradient(135deg, var(--color-surface) 0%, var(--color-bg-tertiary) 100%);
+    border: 2px dashed var(--color-border);
+    border-radius: var(--radius-xl);
+    cursor: pointer;
+    transition: all var(--transition-base);
+}
+
+.file-uploader:hover {
+    border-color: var(--color-primary);
+    background: linear-gradient(135deg, var(--color-primary-light) 0%, var(--color-surface) 100%);
+}
+
+.file-uploader.drag-active {
+    border-color: var(--color-primary);
+    background: linear-gradient(135deg, var(--color-primary-light) 0%, rgba(16, 185, 129, 0.1) 100%);
+    transform: scale(1.02);
+}
+
+.file-input {
+    position: absolute;
+    width: 0;
+    height: 0;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.upload-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 80px;
+    height: 80px;
+    background: var(--color-primary-light);
+    border-radius: var(--radius-full);
+    color: var(--color-primary);
+}
+
+.upload-text {
+    text-align: center;
+}
+
+.upload-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    margin-bottom: 4px;
+}
+
+.upload-subtitle {
+    font-size: 0.9rem;
+    color: var(--color-text-secondary);
+}
+
+.upload-browse {
+    color: var(--color-primary);
+    font-weight: 500;
+    text-decoration: underline;
+}
+
+.upload-info {
+    display: flex;
+    gap: 16px;
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
+}
+
+.upload-error {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 12px;
+    padding: 10px 16px;
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: var(--radius-md);
+    color: var(--color-error);
+    font-size: 0.875rem;
+}
+
+@media (max-width: 768px) {
+    .file-uploader {
+        padding: 32px 20px;
+    }
+
+    .upload-icon {
+        width: 64px;
+        height: 64px;
+    }
+
+    .upload-icon svg {
+        width: 32px;
+        height: 32px;
+    }
+}
