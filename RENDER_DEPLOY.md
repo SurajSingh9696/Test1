@@ -71,8 +71,16 @@ The Dockerfiles are configured to accept PORT as a build argument.
 ## Troubleshooting
 
 ### "is a directory" Error
-- Ensure **Root Directory** is set to `backend` or `frontend`
-- **Dockerfile Path** should be `./Dockerfile` (relative to root dir)
+This error occurs when Render misinterprets the Dockerfile path. **Verify these EXACT settings in Render Dashboard:**
+
+| Setting | Correct Value | Common Mistake |
+|---------|---------------|----------------|
+| **Root Directory** | `frontend` | Leaving blank |
+| **Dockerfile Path** | `./Dockerfile` | Setting to `frontend` |
+
+**Important:** The Dockerfile Path is **relative to the Root Directory**, not the repo root.
+
+If using "Dockerfile" as the path (without `./`), try `./Dockerfile` instead.
 
 ### Build Fails
 - Check Render logs for npm errors
