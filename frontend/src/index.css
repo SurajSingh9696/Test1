@@ -1,29 +1,30 @@
 :root {
-  --color-bg-primary: #F8F9FA;
-  --color-bg-secondary: #FFFFFF;
-  --color-bg-tertiary: #F1F5F9;
-  --color-surface: #FFFFFF;
-  --color-surface-hover: #F1F5F9;
+  /* Warm light theme - soft, easy on the eyes */
+  --color-bg-primary: #F5F0E8;
+  --color-bg-secondary: #FBF8F3;
+  --color-bg-tertiary: #EDE8DF;
+  --color-surface: #FBF8F3;
+  --color-surface-hover: #EDE8DF;
   --color-primary: #10B981;
   --color-primary-hover: #059669;
   --color-primary-light: rgba(16, 185, 129, 0.1);
   --color-accent: #F59E0B;
   --color-accent-hover: #D97706;
   --color-accent-light: rgba(245, 158, 11, 0.1);
-  --color-text-primary: #1F2937;
-  --color-text-secondary: #6B7280;
-  --color-text-muted: #9CA3AF;
-  --color-border: #E5E7EB;
-  --color-border-hover: #D1D5DB;
-  --color-error: #EF4444;
+  --color-text-primary: #2D2A26;
+  --color-text-secondary: #5C5750;
+  --color-text-muted: #8A857C;
+  --color-border: #DDD8CF;
+  --color-border-hover: #C9C3B8;
+  --color-error: #DC2626;
   --color-success: #10B981;
   --color-warning: #F59E0B;
   --color-info: #3B82F6;
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-  --shadow-glow: 0 0 40px rgba(16, 185, 129, 0.15);
+  --shadow-sm: 0 1px 2px 0 rgba(45, 42, 38, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(45, 42, 38, 0.08), 0 2px 4px -1px rgba(45, 42, 38, 0.04);
+  --shadow-lg: 0 10px 15px -3px rgba(45, 42, 38, 0.08), 0 4px 6px -2px rgba(45, 42, 38, 0.04);
+  --shadow-xl: 0 20px 25px -5px rgba(45, 42, 38, 0.08), 0 10px 10px -5px rgba(45, 42, 38, 0.03);
+  --shadow-glow: 0 0 40px rgba(16, 185, 129, 0.12);
   --radius-sm: 6px;
   --radius-md: 12px;
   --radius-lg: 16px;
@@ -103,7 +104,9 @@ button {
   transition: all var(--transition-base);
 }
 
-input, select, textarea {
+input,
+select,
+textarea {
   font-family: var(--font-family);
   font-size: 1rem;
   border: 1px solid var(--color-border);
@@ -114,7 +117,9 @@ input, select, textarea {
   transition: all var(--transition-fast);
 }
 
-input:focus, select:focus, textarea:focus {
+input:focus,
+select:focus,
+textarea:focus {
   outline: none;
   border-color: var(--color-primary);
   box-shadow: 0 0 0 3px var(--color-primary-light);
@@ -267,20 +272,24 @@ input:focus, select:focus, textarea:focus {
   .grid-4 {
     grid-template-columns: repeat(2, 1fr);
   }
+
   .grid-3 {
     grid-template-columns: repeat(2, 1fr);
   }
 }
 
 @media (max-width: 768px) {
-  .grid-4, .grid-3, .grid-2 {
+
+  .grid-4,
+  .grid-3,
+  .grid-2 {
     grid-template-columns: 1fr;
   }
-  
+
   .page-title {
     font-size: 2rem;
   }
-  
+
   .container {
     padding: 0 16px;
   }
@@ -338,6 +347,7 @@ input:focus, select:focus, textarea:focus {
     opacity: 0;
     transform: translateY(20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -349,6 +359,7 @@ input:focus, select:focus, textarea:focus {
     opacity: 0;
     transform: translateX(-20px);
   }
+
   to {
     opacity: 1;
     transform: translateX(0);
@@ -356,9 +367,12 @@ input:focus, select:focus, textarea:focus {
 }
 
 @keyframes pulse {
-  0%, 100% {
+
+  0%,
+  100% {
     opacity: 1;
   }
+
   50% {
     opacity: 0.5;
   }
@@ -368,6 +382,7 @@ input:focus, select:focus, textarea:focus {
   from {
     transform: rotate(0deg);
   }
+
   to {
     transform: rotate(360deg);
   }
@@ -377,9 +392,11 @@ input:focus, select:focus, textarea:focus {
   0% {
     background-position: 0% 50%;
   }
+
   50% {
     background-position: 100% 50%;
   }
+
   100% {
     background-position: 0% 50%;
   }
@@ -417,6 +434,7 @@ input:focus, select:focus, textarea:focus {
   0% {
     background-position: 200% 0;
   }
+
   100% {
     background-position: -200% 0;
   }

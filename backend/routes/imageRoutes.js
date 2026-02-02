@@ -150,6 +150,51 @@ router.post('/batch', upload.array('files', 20), async (req, res, next) => {
     }
 });
 
+// PDF to Image conversion
+router.post('/pdf-to-image', upload.single('file'), async (req, res, next) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ success: false, error: 'No file uploaded' });
+        }
+
+        const { outputFormat, page } = req.body;
+        const format = outputFormat || 'png';
+        const options = page ? { page: parseInt(page) } : {};
+
+        const result = await imageService.pdfToImage(req.file.path, format, options);
+
+        res.json({
+            success: true,
+            message: 'PDF converted to image successfully',
+            files: result.files,
+            filename: result.filename,
+            downloadUrl: `/api/download/${result.filename}`
+        });
+    } catch (error) {
+        next(error);
+    }
+});
+
+// Image to PDF conversion
+router.post('/image-to-pdf', upload.single('file'), async (req, res, next) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ success: false, error: 'No file uploaded' });
+        }
+
+        const result = await imageService.imageToPdf(req.file.path);
+
+        res.json({
+            success: true,
+            message: 'Image converted to PDF successfully',
+            filename: result.filename,
+            downloadUrl: `/api/download/${result.filename}`
+        });
+    } catch (error) {
+        next(error);
+    }
+});
+
 router.get('/formats', (req, res) => {
     res.json({
         success: true,

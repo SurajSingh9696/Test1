@@ -146,10 +146,102 @@ const getImageMetadata = async (inputPath) => {
     };
 };
 
+// PDF to Image conversion
+const pdfToImage = async (inputPath, outputFormat = 'png', options = {}) => {
+    const pdf = require('pdf-poppler');
+    const outputDir = config.convertedDir;
+    const baseName = path.basename(inputPath, path.extname(inputPath));
+
+    const pdfOptions = {
+        format: outputFormat.toLowerCase() === 'jpg' ? 'jpeg' : outputFormat.toLowerCase(),
+        out_dir: outputDir,
+        out_prefix: `${baseName}_${Date.now()}`,
+        page: options.page || null // null means all pages
+    };
+
+    try {
+        await pdf.convert(inputPath, pdfOptions);
+
+        // Find the generated files
+        const files = fs.readdirSync(outputDir)
+            .filter(f => f.startsWith(pdfOptions.out_prefix))
+            .map(f => path.join(outputDir, f));
+
+        if (files.length === 0) {
+            throw new Error('PDF conversion produced no output');
+        }
+
+        // Return the first page or all pages
+        return {
+            success: true,
+            files: files.map(f => ({
+                outputPath: f,
+                filename: path.basename(f)
+            })),
+            filename: path.basename(files[0])
+        };
+    } catch (error) {
+        throw new Error(`PDF to image conversion failed: ${error.message}`);
+    }
+};
+
+// Image to PDF conversion
+const imageToPdf = async (inputPath) => {
+    const { PDFDocument } = require('pdf-lib');
+    const outputPath = generateOutputPath(inputPath, 'pdf', config.convertedDir);
+
+    try {
+        // Read the image
+        const imageBuffer = fs.readFileSync(inputPath);
+        const ext = path.extname(inputPath).toLowerCase();
+
+        // Create a new PDF document
+        const pdfDoc = await PDFDocument.create();
+
+        // Embed the image based on format
+        let image;
+        if (ext === '.jpg' || ext === '.jpeg') {
+            image = await pdfDoc.embedJpg(imageBuffer);
+        } else if (ext === '.png') {
+            image = await pdfDoc.embedPng(imageBuffer);
+        } else {
+            // For other formats, convert to PNG first using sharp
+            const pngBuffer = await sharp(inputPath).png().toBuffer();
+            image = await pdfDoc.embedPng(pngBuffer);
+        }
+
+        // Get image dimensions
+        const { width, height } = image.scale(1);
+
+        // Add a page with the image dimensions
+        const page = pdfDoc.addPage([width, height]);
+        page.drawImage(image, {
+            x: 0,
+            y: 0,
+            width: width,
+            height: height
+        });
+
+        // Save the PDF
+        const pdfBytes = await pdfDoc.save();
+        fs.writeFileSync(outputPath, pdfBytes);
+
+        return {
+            success: true,
+            outputPath: outputPath,
+            filename: path.basename(outputPath)
+        };
+    } catch (error) {
+        throw new Error(`Image to PDF conversion failed: ${error.message}`);
+    }
+};
+
 module.exports = {
     convertImage,
     compressImage,
     resizeImage,
     cropImage,
-    getImageMetadata
+    getImageMetadata,
+    pdfToImage,
+    imageToPdf
 };

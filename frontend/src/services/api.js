@@ -103,6 +103,20 @@ export const imageAPI = {
         return api.post('/images/metadata', formData)
     },
 
+    pdfToImage: (file, outputFormat = 'png', page = null) => {
+        const formData = new FormData()
+        formData.append('file', file)
+        formData.append('outputFormat', outputFormat)
+        if (page) formData.append('page', page)
+        return api.post('/images/pdf-to-image', formData)
+    },
+
+    imageToPdf: (file) => {
+        const formData = new FormData()
+        formData.append('file', file)
+        return api.post('/images/image-to-pdf', formData)
+    },
+
     getFormats: () => api.get('/images/formats')
 }
 

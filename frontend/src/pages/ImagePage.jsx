@@ -16,6 +16,7 @@ function ImagePage() {
     const [result, setResult] = useState(null)
     const [error, setError] = useState(null)
     const { addConversion, updateConversion } = useConversion()
+    const [conversionMode, setConversionMode] = useState('image') // 'image', 'pdfToImage', 'imageToPdf'
 
     const formatOptions = [
         { value: 'jpg', label: 'JPG' },
@@ -24,6 +25,11 @@ function ImagePage() {
         { value: 'gif', label: 'GIF' },
         { value: 'tiff', label: 'TIFF' },
         { value: 'bmp', label: 'BMP' }
+    ]
+
+    const pdfOutputFormats = [
+        { value: 'png', label: 'PNG' },
+        { value: 'jpg', label: 'JPG' }
     ]
 
     const handleFilesSelected = (selectedFiles) => {
@@ -90,11 +96,85 @@ function ImagePage() {
         }
     }
 
+    const handlePdfToImage = async () => {
+        if (files.length === 0) return
+
+        setIsConverting(true)
+        setProgress(0)
+        setError(null)
+        setResult(null)
+
+        const conversionId = addConversion({
+            originalName: files[0].name,
+            type: 'pdf-to-image',
+            outputFormat,
+            status: 'processing'
+        })
+
+        try {
+            setProgress(30)
+            const response = await imageAPI.pdfToImage(files[0], outputFormat)
+            setProgress(100)
+
+            setResult({
+                filename: response.data.filename,
+                downloadUrl: downloadFile(response.data.filename)
+            })
+
+            updateConversion(conversionId, { status: 'success' })
+        } catch (err) {
+            setError(err.message)
+            updateConversion(conversionId, { status: 'error' })
+        } finally {
+            setIsConverting(false)
+        }
+    }
+
+    const handleImageToPdf = async () => {
+        if (files.length === 0) return
+
+        setIsConverting(true)
+        setProgress(0)
+        setError(null)
+        setResult(null)
+
+        const conversionId = addConversion({
+            originalName: files[0].name,
+            type: 'image-to-pdf',
+            outputFormat: 'pdf',
+            status: 'processing'
+        })
+
+        try {
+            setProgress(30)
+            const response = await imageAPI.imageToPdf(files[0])
+            setProgress(100)
+
+            setResult({
+                filename: response.data.filename,
+                downloadUrl: downloadFile(response.data.filename)
+            })
+
+            updateConversion(conversionId, { status: 'success' })
+        } catch (err) {
+            setError(err.message)
+            updateConversion(conversionId, { status: 'error' })
+        } finally {
+            setIsConverting(false)
+        }
+    }
+
     const handleReset = () => {
         setFiles([])
         setResult(null)
         setError(null)
         setProgress(0)
+        setConversionMode('image')
+    }
+
+    const getAcceptTypes = () => {
+        if (conversionMode === 'pdfToImage') return '.pdf'
+        return 'image/*,.heic,.heif'
     }
 
     return (
@@ -128,7 +208,7 @@ function ImagePage() {
                                 >
                                     <FileUploader
                                         onFilesSelected={handleFilesSelected}
-                                        accept="image/*,.heic,.heif"
+                                        accept={getAcceptTypes()}
                                     />
 
                                     {files.length > 0 && (
@@ -217,19 +297,45 @@ function ImagePage() {
 
                     <div className="converter-sidebar">
                         <div className="sidebar-card">
-                            <h3>Output Format</h3>
+                            <h3>Conversion Type</h3>
                             <div className="format-grid">
-                                {formatOptions.map((format) => (
-                                    <button
-                                        key={format.value}
-                                        className={`format-option ${outputFormat === format.value ? 'active' : ''}`}
-                                        onClick={() => setOutputFormat(format.value)}
-                                    >
-                                        {format.label}
-                                    </button>
-                                ))}
+                                <button
+                                    className={`format-option ${conversionMode === 'image' ? 'active' : ''}`}
+                                    onClick={() => { setConversionMode('image'); setFiles([]); }}
+                                >
+                                    Image → Image
+                                </button>
+                                <button
+                                    className={`format-option ${conversionMode === 'pdfToImage' ? 'active' : ''}`}
+                                    onClick={() => { setConversionMode('pdfToImage'); setFiles([]); }}
+                                >
+                                    PDF → Image
+                                </button>
+                                <button
+                                    className={`format-option ${conversionMode === 'imageToPdf' ? 'active' : ''}`}
+                                    onClick={() => { setConversionMode('imageToPdf'); setFiles([]); }}
+                                >
+                                    Image → PDF
+                                </button>
                             </div>
                         </div>
+
+                        {conversionMode !== 'imageToPdf' && (
+                            <div className="sidebar-card">
+                                <h3>Output Format</h3>
+                                <div className="format-grid">
+                                    {(conversionMode === 'pdfToImage' ? pdfOutputFormats : formatOptions).map((format) => (
+                                        <button
+                                            key={format.value}
+                                            className={`format-option ${outputFormat === format.value ? 'active' : ''}`}
+                                            onClick={() => setOutputFormat(format.value)}
+                                        >
+                                            {format.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
 
                         <div className="sidebar-card">
                             <h3>Options</h3>
@@ -264,20 +370,42 @@ function ImagePage() {
                         </div>
 
                         <div className="action-buttons">
-                            <button
-                                className="btn btn-primary btn-lg w-full convert-btn"
-                                onClick={handleConvert}
-                                disabled={files.length === 0 || isConverting}
-                            >
-                                {isConverting ? 'Converting...' : 'Convert Image'}
-                            </button>
-                            <button
-                                className="btn btn-secondary w-full"
-                                onClick={handleCompress}
-                                disabled={files.length === 0 || isConverting}
-                            >
-                                Compress Only
-                            </button>
+                            {conversionMode === 'image' && (
+                                <>
+                                    <button
+                                        className="btn btn-primary btn-lg w-full convert-btn"
+                                        onClick={handleConvert}
+                                        disabled={files.length === 0 || isConverting}
+                                    >
+                                        {isConverting ? 'Converting...' : 'Convert Image'}
+                                    </button>
+                                    <button
+                                        className="btn btn-secondary w-full"
+                                        onClick={handleCompress}
+                                        disabled={files.length === 0 || isConverting}
+                                    >
+                                        Compress Only
+                                    </button>
+                                </>
+                            )}
+                            {conversionMode === 'pdfToImage' && (
+                                <button
+                                    className="btn btn-primary btn-lg w-full convert-btn"
+                                    onClick={handlePdfToImage}
+                                    disabled={files.length === 0 || isConverting}
+                                >
+                                    {isConverting ? 'Converting...' : 'Convert PDF to Image'}
+                                </button>
+                            )}
+                            {conversionMode === 'imageToPdf' && (
+                                <button
+                                    className="btn btn-primary btn-lg w-full convert-btn"
+                                    onClick={handleImageToPdf}
+                                    disabled={files.length === 0 || isConverting}
+                                >
+                                    {isConverting ? 'Converting...' : 'Convert to PDF'}
+                                </button>
+                            )}
                         </div>
                     </div>
                 </div>
