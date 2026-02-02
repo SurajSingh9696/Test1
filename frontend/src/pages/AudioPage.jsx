@@ -148,7 +148,7 @@ function AudioPage() {
                                             <polyline points="20,6 9,17 4,12" />
                                         </svg>
                                     </div>
-                                    <h3>Audio Converted!</h3>
+                                    <h3>Conversion Complete!</h3>
                                     <p>Your audio file has been converted successfully</p>
                                     <div className="result-actions">
                                         <a href={result.downloadUrl} className="btn btn-primary btn-lg" download>

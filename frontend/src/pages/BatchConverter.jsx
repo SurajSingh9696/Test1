@@ -191,7 +191,7 @@ function BatchConverter() {
                                         <polyline points="20,6 9,17 4,12" />
                                     </svg>
                                 </div>
-                                <h3>{results.length} Files Converted!</h3>
+                                <h3>Conversion Complete! ({results.length} files)</h3>
                             </div>
                             <div className="results-grid">
                                 {results.map((result, index) => (
