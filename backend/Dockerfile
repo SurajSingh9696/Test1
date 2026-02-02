@@ -1,6 +1,7 @@
 FROM node:18-alpine
 
 # Install LibreOffice, poppler-utils (PDF), ffmpeg (audio/video), and Python for pdf2docx
+# Build dependencies are installed temporarily for opencv-python-headless
 RUN apk add --no-cache \
     libreoffice \
     poppler-utils \
@@ -10,7 +11,18 @@ RUN apk add --no-cache \
     ttf-liberation \
     python3 \
     py3-pip \
+    # Build dependencies for opencv-python-headless
+    && apk add --no-cache --virtual .build-deps \
+    gcc \
+    g++ \
+    cmake \
+    make \
+    musl-dev \
+    python3-dev \
+    linux-headers \
     && pip3 install --no-cache-dir --break-system-packages pdf2docx \
+    # Remove build dependencies to keep image smaller
+    && apk del .build-deps \
     && rm -rf /var/cache/apk/*
 
 WORKDIR /app
