@@ -1,5 +1,15 @@
 FROM node:18-alpine
 
+# Install LibreOffice, poppler-utils (PDF), and ffmpeg (audio/video)
+RUN apk add --no-cache \
+    libreoffice \
+    poppler-utils \
+    ffmpeg \
+    fontconfig \
+    ttf-dejavu \
+    ttf-liberation \
+    && rm -rf /var/cache/apk/*
+
 WORKDIR /app
 
 COPY package*.json ./
