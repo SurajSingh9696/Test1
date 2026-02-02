@@ -8,25 +8,62 @@ const { generateOutputPath } = require('../utils/fileUtils');
 
 const convertWithLibreOffice = (inputPath, outputFormat, outputDir) => {
     return new Promise((resolve, reject) => {
+        const baseName = path.basename(inputPath, path.extname(inputPath));
         const command = `"${config.libreOfficePath}" --headless --convert-to ${outputFormat} --outdir "${outputDir}" "${inputPath}"`;
+
+        console.log(`[LibreOffice] Running: ${command}`);
 
         exec(command, (error, stdout, stderr) => {
             if (error) {
+                console.error(`[LibreOffice] Error: ${error.message}`);
+                console.error(`[LibreOffice] stderr: ${stderr}`);
                 reject(new Error(`LibreOffice conversion failed: ${error.message}`));
                 return;
             }
 
-            const baseName = path.basename(inputPath, path.extname(inputPath));
-            const outputPath = path.join(outputDir, `${baseName}.${outputFormat}`);
+            console.log(`[LibreOffice] stdout: ${stdout}`);
+            if (stderr) console.log(`[LibreOffice] stderr: ${stderr}`);
 
-            if (fs.existsSync(outputPath)) {
+            // Try to find the output file - LibreOffice might use slightly different names
+            const possibleExtensions = [outputFormat, outputFormat.toLowerCase()];
+            let outputPath = null;
+
+            for (const ext of possibleExtensions) {
+                const tryPath = path.join(outputDir, `${baseName}.${ext}`);
+                if (fs.existsSync(tryPath)) {
+                    outputPath = tryPath;
+                    break;
+                }
+            }
+
+            // If still not found, try to find any file that starts with the base name
+            if (!outputPath) {
+                try {
+                    const files = fs.readdirSync(outputDir);
+                    const matchingFiles = files.filter(f =>
+                        f.startsWith(baseName) &&
+                        f.toLowerCase().endsWith(`.${outputFormat.toLowerCase()}`)
+                    );
+
+                    if (matchingFiles.length > 0) {
+                        outputPath = path.join(outputDir, matchingFiles[0]);
+                    }
+                } catch (dirError) {
+                    console.error(`[LibreOffice] Error reading output dir: ${dirError.message}`);
+                }
+            }
+
+            if (outputPath && fs.existsSync(outputPath)) {
+                console.log(`[LibreOffice] Output file found: ${outputPath}`);
                 resolve({
                     success: true,
                     outputPath: outputPath,
                     filename: path.basename(outputPath)
                 });
             } else {
-                reject(new Error('Conversion completed but output file not found'));
+                console.error(`[LibreOffice] Output file not found. Expected: ${baseName}.${outputFormat}`);
+                console.error(`[LibreOffice] Files in output dir:`, fs.readdirSync(outputDir).slice(0, 10));
+                reject(new Error(`Conversion completed but output file not found. LibreOffice may not support this conversion (${path.extname(inputPath)} to ${outputFormat}).`));
             }
         });
     });
@@ -193,7 +230,46 @@ const convertDocument = async (inputPath, outputFormat) => {
         return jsonToCsv(inputPath);
     }
 
+    // Special handling for PDF to DOCX/DOC using Python
+    if (inputExt === 'pdf' && (targetFormat === 'docx' || targetFormat === 'doc')) {
+        return pdfToDocx(inputPath);
+    }
+
     return convertWithLibreOffice(inputPath, targetFormat, config.convertedDir);
+};
+
+// PDF to DOCX using Python pdf2docx library
+const pdfToDocx = (inputPath) => {
+    return new Promise((resolve, reject) => {
+        const outputPath = generateOutputPath(inputPath, 'docx', config.convertedDir);
+        const scriptPath = path.join(__dirname, '..', 'scripts', 'pdf_to_docx.py');
+        const command = `python3 "${scriptPath}" "${inputPath}" "${outputPath}"`;
+
+        console.log(`[pdf2docx] Running: ${command}`);
+
+        exec(command, { timeout: 300000 }, (error, stdout, stderr) => {
+            if (error) {
+                console.error(`[pdf2docx] Error: ${error.message}`);
+                console.error(`[pdf2docx] stderr: ${stderr}`);
+                reject(new Error(`PDF to DOCX conversion failed: ${error.message}`));
+                return;
+            }
+
+            console.log(`[pdf2docx] stdout: ${stdout}`);
+            if (stderr) console.log(`[pdf2docx] stderr: ${stderr}`);
+
+            if (fs.existsSync(outputPath)) {
+                console.log(`[pdf2docx] Output file created: ${outputPath}`);
+                resolve({
+                    success: true,
+                    outputPath: outputPath,
+                    filename: path.basename(outputPath)
+                });
+            } else {
+                reject(new Error('PDF to DOCX conversion completed but output file not found'));
+            }
+        });
+    });
 };
 
 module.exports = {
@@ -204,5 +280,6 @@ module.exports = {
     htmlToPdf,
     csvToJson,
     jsonToCsv,
+    pdfToDocx,
     convertWithLibreOffice
 };

@@ -1,6 +1,6 @@
 FROM node:18-alpine
 
-# Install LibreOffice, poppler-utils (PDF), and ffmpeg (audio/video)
+# Install LibreOffice, poppler-utils (PDF), ffmpeg (audio/video), and Python for pdf2docx
 RUN apk add --no-cache \
     libreoffice \
     poppler-utils \
@@ -8,6 +8,9 @@ RUN apk add --no-cache \
     fontconfig \
     ttf-dejavu \
     ttf-liberation \
+    python3 \
+    py3-pip \
+    && pip3 install --no-cache-dir --break-system-packages pdf2docx \
     && rm -rf /var/cache/apk/*
 
 WORKDIR /app
