@@ -222,6 +222,11 @@ const convertDocument = async (inputPath, outputFormat) => {
         return textToPdf(inputPath);
     }
 
+    // Special handling for HTML to DOCX using Python
+    if ((inputExt === 'html' || inputExt === 'htm') && targetFormat === 'docx') {
+        return htmlToDocx(inputPath);
+    }
+
     if (inputExt === 'csv' && targetFormat === 'json') {
         return csvToJson(inputPath);
     }
@@ -235,7 +240,160 @@ const convertDocument = async (inputPath, outputFormat) => {
         return pdfToDocx(inputPath);
     }
 
+    // Special handling for PDF to XLSX/CSV using Python tabula
+    if (inputExt === 'pdf' && (targetFormat === 'xlsx' || targetFormat === 'csv' || targetFormat === 'xls')) {
+        return pdfToExcel(inputPath, targetFormat === 'xls' ? 'xlsx' : targetFormat);
+    }
+
+    // Special handling for DOCX/TXT/HTML to PDF using Python (no LibreOffice needed)
+    if ((inputExt === 'docx' || inputExt === 'txt' || inputExt === 'html' || inputExt === 'htm') && targetFormat === 'pdf') {
+        return docToPdf(inputPath);
+    }
+
+    // Special handling for PDF to PPTX/PPT using Python
+    if (inputExt === 'pdf' && (targetFormat === 'pptx' || targetFormat === 'ppt')) {
+        return pdfToPpt(inputPath);
+    }
+
+    // Fallback to LibreOffice for other conversions
+    // Note: LibreOffice may not work properly in some Docker environments
     return convertWithLibreOffice(inputPath, targetFormat, config.convertedDir);
+};
+
+// PDF to PowerPoint using Python
+const pdfToPpt = (inputPath) => {
+    return new Promise((resolve, reject) => {
+        const outputPath = generateOutputPath(inputPath, 'pptx', config.convertedDir);
+        const scriptPath = path.join(__dirname, '..', 'scripts', 'pdf_to_ppt.py');
+        const command = `python3 "${scriptPath}" "${inputPath}" "${outputPath}"`;
+
+        console.log(`[pdfToPpt] Running: ${command}`);
+
+        exec(command, { timeout: 600000 }, (error, stdout, stderr) => {
+            if (error) {
+                console.error(`[pdfToPpt] Error: ${error.message}`);
+                console.error(`[pdfToPpt] stderr: ${stderr}`);
+                reject(new Error(`PDF to PowerPoint conversion failed: ${error.message}`));
+                return;
+            }
+
+            console.log(`[pdfToPpt] stdout: ${stdout}`);
+            if (stderr) console.log(`[pdfToPpt] stderr: ${stderr}`);
+
+            if (fs.existsSync(outputPath)) {
+                console.log(`[pdfToPpt] Output file created: ${outputPath}`);
+                resolve({
+                    success: true,
+                    outputPath: outputPath,
+                    filename: path.basename(outputPath)
+                });
+            } else {
+                reject(new Error('PDF to PowerPoint conversion completed but output file not found'));
+            }
+        });
+    });
+};
+
+// HTML to DOCX using Python (beautifulsoup4 + python-docx)
+const htmlToDocx = (inputPath) => {
+    return new Promise((resolve, reject) => {
+        const outputPath = generateOutputPath(inputPath, 'docx', config.convertedDir);
+        const scriptPath = path.join(__dirname, '..', 'scripts', 'html_to_docx.py');
+        const command = `python3 "${scriptPath}" "${inputPath}" "${outputPath}"`;
+
+        console.log(`[htmlToDocx] Running: ${command}`);
+
+        exec(command, { timeout: 300000 }, (error, stdout, stderr) => {
+            if (error) {
+                console.error(`[htmlToDocx] Error: ${error.message}`);
+                console.error(`[htmlToDocx] stderr: ${stderr}`);
+                reject(new Error(`HTML to DOCX conversion failed: ${error.message}`));
+                return;
+            }
+
+            console.log(`[htmlToDocx] stdout: ${stdout}`);
+            if (stderr) console.log(`[htmlToDocx] stderr: ${stderr}`);
+
+            if (fs.existsSync(outputPath)) {
+                console.log(`[htmlToDocx] Output file created: ${outputPath}`);
+                resolve({
+                    success: true,
+                    outputPath: outputPath,
+                    filename: path.basename(outputPath)
+                });
+            } else {
+                reject(new Error('HTML to DOCX conversion completed but output file not found'));
+            }
+        });
+    });
+};
+
+// Document to PDF using Python (python-docx + reportlab)
+const docToPdf = (inputPath) => {
+    return new Promise((resolve, reject) => {
+        const outputPath = generateOutputPath(inputPath, 'pdf', config.convertedDir);
+        const scriptPath = path.join(__dirname, '..', 'scripts', 'doc_to_pdf.py');
+        const command = `python3 "${scriptPath}" "${inputPath}" "${outputPath}"`;
+
+        console.log(`[docToPdf] Running: ${command}`);
+
+        exec(command, { timeout: 300000 }, (error, stdout, stderr) => {
+            if (error) {
+                console.error(`[docToPdf] Error: ${error.message}`);
+                console.error(`[docToPdf] stderr: ${stderr}`);
+                reject(new Error(`Document to PDF conversion failed: ${error.message}`));
+                return;
+            }
+
+            console.log(`[docToPdf] stdout: ${stdout}`);
+            if (stderr) console.log(`[docToPdf] stderr: ${stderr}`);
+
+            if (fs.existsSync(outputPath)) {
+                console.log(`[docToPdf] Output file created: ${outputPath}`);
+                resolve({
+                    success: true,
+                    outputPath: outputPath,
+                    filename: path.basename(outputPath)
+                });
+            } else {
+                reject(new Error('Document to PDF conversion completed but output file not found'));
+            }
+        });
+    });
+};
+
+// PDF to Excel/CSV using Python tabula-py library
+const pdfToExcel = (inputPath, outputFormat = 'xlsx') => {
+    return new Promise((resolve, reject) => {
+        const outputPath = generateOutputPath(inputPath, outputFormat, config.convertedDir);
+        const scriptPath = path.join(__dirname, '..', 'scripts', 'pdf_to_excel.py');
+        const command = `python3 "${scriptPath}" "${inputPath}" "${outputPath}"`;
+
+        console.log(`[tabula] Running: ${command}`);
+
+        exec(command, { timeout: 300000 }, (error, stdout, stderr) => {
+            if (error) {
+                console.error(`[tabula] Error: ${error.message}`);
+                console.error(`[tabula] stderr: ${stderr}`);
+                reject(new Error(`PDF to Excel conversion failed: ${error.message}`));
+                return;
+            }
+
+            console.log(`[tabula] stdout: ${stdout}`);
+            if (stderr) console.log(`[tabula] stderr: ${stderr}`);
+
+            if (fs.existsSync(outputPath)) {
+                console.log(`[tabula] Output file created: ${outputPath}`);
+                resolve({
+                    success: true,
+                    outputPath: outputPath,
+                    filename: path.basename(outputPath)
+                });
+            } else {
+                reject(new Error('PDF to Excel conversion completed but output file not found'));
+            }
+        });
+    });
 };
 
 // PDF to DOCX using Python pdf2docx library

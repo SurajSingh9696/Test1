@@ -146,81 +146,93 @@ const getImageMetadata = async (inputPath) => {
     };
 };
 
-// PDF to Image conversion
+// PDF to Image conversion using Python pdf2image
 const pdfToImage = async (inputPath, outputFormat = 'png', options = {}) => {
-    const pdf = require('pdf-poppler');
-    const outputDir = config.convertedDir;
-    const baseName = path.basename(inputPath, path.extname(inputPath));
+    const { exec } = require('child_process');
+    const util = require('util');
+    const execPromise = util.promisify(exec);
 
-    const pdfOptions = {
-        format: outputFormat.toLowerCase() === 'jpg' ? 'jpeg' : outputFormat.toLowerCase(),
-        out_dir: outputDir,
-        out_prefix: `${baseName}_${Date.now()}`,
-        page: options.page || null // null means all pages
-    };
+    const outputDir = config.convertedDir;
+    const scriptPath = path.join(__dirname, '..', 'scripts', 'pdf_to_image.py');
+
+    const pageArg = options.page ? options.page.toString() : '';
+    const command = `python3 "${scriptPath}" "${inputPath}" "${outputDir}" "${outputFormat}" ${pageArg}`.trim();
+
+    console.log(`[pdfToImage] Running: ${command}`);
 
     try {
-        await pdf.convert(inputPath, pdfOptions);
+        const { stdout, stderr } = await execPromise(command, { timeout: 600000 });
 
-        // Find the generated files
-        const files = fs.readdirSync(outputDir)
-            .filter(f => f.startsWith(pdfOptions.out_prefix))
-            .map(f => path.join(outputDir, f));
+        console.log(`[pdfToImage] stdout: ${stdout}`);
+        if (stderr) console.log(`[pdfToImage] stderr: ${stderr}`);
+
+        // Parse the output files from stdout
+        const outputLines = stdout.split('\n').filter(line => line.startsWith('OUTPUT:'));
+        const files = outputLines.map(line => {
+            const filePath = line.replace('OUTPUT:', '').trim();
+            return {
+                outputPath: filePath,
+                filename: path.basename(filePath)
+            };
+        });
 
         if (files.length === 0) {
-            throw new Error('PDF conversion produced no output');
+            throw new Error('PDF to image conversion produced no output');
         }
 
-        // Return the first page or all pages
         return {
             success: true,
-            files: files.map(f => ({
-                outputPath: f,
-                filename: path.basename(f)
-            })),
-            filename: path.basename(files[0])
+            files: files,
+            outputPath: files[0].outputPath,
+            filename: files[0].filename
         };
     } catch (error) {
+        console.error(`[pdfToImage] Error: ${error.message}`);
         throw new Error(`PDF to image conversion failed: ${error.message}`);
     }
 };
 
-// Image to PDF conversion
-const imageToPdf = async (inputPath) => {
+// Image to PDF conversion (supports multiple images)
+const imageToPdf = async (inputPaths) => {
     const { PDFDocument } = require('pdf-lib');
-    const outputPath = generateOutputPath(inputPath, 'pdf', config.convertedDir);
+
+    // Support both single path and array of paths
+    const paths = Array.isArray(inputPaths) ? inputPaths : [inputPaths];
+    const outputPath = generateOutputPath(paths[0], 'pdf', config.convertedDir);
 
     try {
-        // Read the image
-        const imageBuffer = fs.readFileSync(inputPath);
-        const ext = path.extname(inputPath).toLowerCase();
-
         // Create a new PDF document
         const pdfDoc = await PDFDocument.create();
 
-        // Embed the image based on format
-        let image;
-        if (ext === '.jpg' || ext === '.jpeg') {
-            image = await pdfDoc.embedJpg(imageBuffer);
-        } else if (ext === '.png') {
-            image = await pdfDoc.embedPng(imageBuffer);
-        } else {
-            // For other formats, convert to PNG first using sharp
-            const pngBuffer = await sharp(inputPath).png().toBuffer();
-            image = await pdfDoc.embedPng(pngBuffer);
+        for (const inputPath of paths) {
+            // Read the image
+            const imageBuffer = fs.readFileSync(inputPath);
+            const ext = path.extname(inputPath).toLowerCase();
+
+            // Embed the image based on format
+            let image;
+            if (ext === '.jpg' || ext === '.jpeg') {
+                image = await pdfDoc.embedJpg(imageBuffer);
+            } else if (ext === '.png') {
+                image = await pdfDoc.embedPng(imageBuffer);
+            } else {
+                // For other formats, convert to PNG first using sharp
+                const pngBuffer = await sharp(inputPath).png().toBuffer();
+                image = await pdfDoc.embedPng(pngBuffer);
+            }
+
+            // Get image dimensions
+            const { width, height } = image.scale(1);
+
+            // Add a page with the image dimensions
+            const page = pdfDoc.addPage([width, height]);
+            page.drawImage(image, {
+                x: 0,
+                y: 0,
+                width: width,
+                height: height
+            });
         }
-
-        // Get image dimensions
-        const { width, height } = image.scale(1);
-
-        // Add a page with the image dimensions
-        const page = pdfDoc.addPage([width, height]);
-        page.drawImage(image, {
-            x: 0,
-            y: 0,
-            width: width,
-            height: height
-        });
 
         // Save the PDF
         const pdfBytes = await pdfDoc.save();
@@ -229,7 +241,8 @@ const imageToPdf = async (inputPath) => {
         return {
             success: true,
             outputPath: outputPath,
-            filename: path.basename(outputPath)
+            filename: path.basename(outputPath),
+            pages: paths.length
         };
     } catch (error) {
         throw new Error(`Image to PDF conversion failed: ${error.message}`);

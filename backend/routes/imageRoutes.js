@@ -175,18 +175,20 @@ router.post('/pdf-to-image', upload.single('file'), async (req, res, next) => {
     }
 });
 
-// Image to PDF conversion
-router.post('/image-to-pdf', upload.single('file'), async (req, res, next) => {
+// Image to PDF conversion (supports multiple images)
+router.post('/image-to-pdf', upload.array('files', 20), async (req, res, next) => {
     try {
-        if (!req.file) {
-            return res.status(400).json({ success: false, error: 'No file uploaded' });
+        if (!req.files || req.files.length === 0) {
+            return res.status(400).json({ success: false, error: 'No files uploaded' });
         }
 
-        const result = await imageService.imageToPdf(req.file.path);
+        // Get all file paths
+        const filePaths = req.files.map(f => f.path);
+        const result = await imageService.imageToPdf(filePaths);
 
         res.json({
             success: true,
-            message: 'Image converted to PDF successfully',
+            message: `${req.files.length} image(s) converted to PDF successfully`,
             filename: result.filename,
             downloadUrl: `/api/download/${result.filename}`
         });

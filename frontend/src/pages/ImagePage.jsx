@@ -33,7 +33,12 @@ function ImagePage() {
     ]
 
     const handleFilesSelected = (selectedFiles) => {
-        setFiles(selectedFiles)
+        // For image-to-PDF, allow adding multiple files; otherwise replace
+        if (conversionMode === 'imageToPdf') {
+            setFiles(prev => [...prev, ...selectedFiles])
+        } else {
+            setFiles(selectedFiles)
+        }
         setResult(null)
         setError(null)
     }
@@ -139,7 +144,7 @@ function ImagePage() {
         setResult(null)
 
         const conversionId = addConversion({
-            originalName: files[0].name,
+            originalName: files.length === 1 ? files[0].name : `${files.length} images`,
             type: 'image-to-pdf',
             outputFormat: 'pdf',
             status: 'processing'
@@ -147,7 +152,7 @@ function ImagePage() {
 
         try {
             setProgress(30)
-            const response = await imageAPI.imageToPdf(files[0])
+            const response = await imageAPI.imageToPdf(files)
             setProgress(100)
 
             setResult({

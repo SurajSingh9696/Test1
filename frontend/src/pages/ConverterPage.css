@@ -164,6 +164,24 @@
     max-width: 300px;
 }
 
+.result-actions.horizontal {
+    flex-direction: row;
+    gap: 16px;
+    max-width: 100%;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-top: 16px;
+}
+
+.action-buttons .btn {
+    min-width: 140px;
+}
+
 .converting-overlay {
     display: flex;
     flex-direction: column;

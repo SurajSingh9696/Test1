@@ -111,9 +111,13 @@ export const imageAPI = {
         return api.post('/images/pdf-to-image', formData)
     },
 
-    imageToPdf: (file) => {
+    imageToPdf: (files) => {
         const formData = new FormData()
-        formData.append('file', file)
+        // Support both single file and array of files
+        const fileArray = Array.isArray(files) ? files : [files]
+        fileArray.forEach(file => {
+            formData.append('files', file)
+        })
         return api.post('/images/image-to-pdf', formData)
     },
 

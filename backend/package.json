@@ -14,7 +14,6 @@
     "sharp": "^0.33.2",
     "fluent-ffmpeg": "^2.1.2",
     "pdf-lib": "^1.17.1",
-    "pdf-poppler": "^0.2.1",
     "mammoth": "^1.6.0",
     "archiver": "^6.0.1",
     "node-7z": "^3.0.0",

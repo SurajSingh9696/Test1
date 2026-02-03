@@ -225,9 +225,18 @@
 }
 
 @media (max-width: 768px) {
+    .batch-converter {
+        padding: 24px 0;
+    }
+
+    .batch-converter .page-header {
+        margin-bottom: 24px;
+    }
+
     .batch-settings {
         flex-direction: column;
         gap: 20px;
+        padding: 16px;
     }
 
     .type-options,
@@ -235,7 +244,62 @@
         flex-wrap: wrap;
     }
 
+    .type-option,
+    .format-option {
+        min-width: 80px;
+        flex: 0 0 auto;
+    }
+
+    .files-list {
+        padding: 16px;
+    }
+
+    .files-header {
+        flex-direction: column;
+        gap: 12px;
+        align-items: stretch;
+    }
+
     .files-grid {
         grid-template-columns: 1fr;
+    }
+
+    .file-card {
+        padding: 12px;
+    }
+
+    .file-card .file-name {
+        max-width: 180px;
+    }
+
+    .results-section {
+        padding: 24px 16px;
+    }
+
+    .result-card {
+        flex-direction: column;
+        gap: 12px;
+        align-items: stretch;
+        text-align: center;
+    }
+
+    .result-card .btn {
+        width: 100%;
+    }
+
+    .converting-section {
+        padding: 24px 16px;
+    }
+}
+
+@media (max-width: 480px) {
+    .batch-converter {
+        padding: 16px 0;
+    }
+
+    .type-option,
+    .format-option {
+        width: 100%;
+        flex: 1 1 100%;
     }
 }
