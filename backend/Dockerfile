@@ -6,16 +6,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     poppler-utils \
     ffmpeg \
     fontconfig \
-    fonts-dejavu \
+    fonts-dejavu-core \
     fonts-liberation \
     python3 \
     python3-pip \
     python3-venv \
     # Full JDK for tabula-java image processing
-    openjdk-11-jdk-headless \
+    default-jdk-headless \
     # Required for image processing
-    libjpeg62-turbo \
-    libpng16-16 \
+    libjpeg-dev \
+    libpng-dev \
     libfreetype6 \
     && rm -rf /var/lib/apt/lists/*
 
