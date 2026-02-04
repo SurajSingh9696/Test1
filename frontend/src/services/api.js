@@ -103,22 +103,32 @@ export const imageAPI = {
         return api.post('/images/metadata', formData)
     },
 
-    pdfToImage: (file, outputFormat = 'png', page = null) => {
+    pdfToImage: (file, outputFormat = 'png', page = null, onProgress = null) => {
         const formData = new FormData()
         formData.append('file', file)
         formData.append('outputFormat', outputFormat)
         if (page) formData.append('page', page)
-        return api.post('/images/pdf-to-image', formData)
+        return api.post('/images/pdf-to-image', formData, {
+            onUploadProgress: onProgress ? (progressEvent) => {
+                const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total)
+                onProgress(percentCompleted)
+            } : undefined
+        })
     },
 
-    imageToPdf: (files) => {
+    imageToPdf: (files, onProgress = null) => {
         const formData = new FormData()
         // Support both single file and array of files
         const fileArray = Array.isArray(files) ? files : [files]
         fileArray.forEach(file => {
             formData.append('files', file)
         })
-        return api.post('/images/image-to-pdf', formData)
+        return api.post('/images/image-to-pdf', formData, {
+            onUploadProgress: onProgress ? (progressEvent) => {
+                const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total)
+                onProgress(percentCompleted)
+            } : undefined
+        })
     },
 
     getFormats: () => api.get('/images/formats')

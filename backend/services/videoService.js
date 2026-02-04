@@ -106,19 +106,61 @@ const trimVideo = (inputPath, startTime, duration) => {
 
 const extractAudio = (inputPath, outputFormat = 'mp3') => {
     return new Promise((resolve, reject) => {
+        const fs = require('fs');
         const outputPath = generateOutputPath(inputPath, outputFormat, config.convertedDir);
 
-        ffmpeg(inputPath)
+        // Ensure output directory exists
+        const outputDir = path.dirname(outputPath);
+        if (!fs.existsSync(outputDir)) {
+            fs.mkdirSync(outputDir, { recursive: true });
+        }
+
+        console.log(`[extractAudio] Input: ${inputPath}`);
+        console.log(`[extractAudio] Output: ${outputPath}`);
+        console.log(`[extractAudio] Format: ${outputFormat}`);
+
+        // Map format to audio codec
+        const codecMap = {
+            'mp3': 'libmp3lame',
+            'aac': 'aac',
+            'm4a': 'aac',
+            'wav': 'pcm_s16le',
+            'ogg': 'libvorbis',
+            'flac': 'flac'
+        };
+
+        const audioCodec = codecMap[outputFormat.toLowerCase()] || 'libmp3lame';
+
+        let command = ffmpeg(inputPath)
             .noVideo()
-            .toFormat(outputFormat)
+            .audioCodec(audioCodec)
+            .audioBitrate('192k');
+
+        // For MP3, set the output format explicitly
+        if (outputFormat.toLowerCase() === 'mp3') {
+            command = command.format('mp3');
+        } else {
+            command = command.toFormat(outputFormat);
+        }
+
+        command
+            .on('start', (cmdLine) => {
+                console.log(`[extractAudio] FFmpeg command: ${cmdLine}`);
+            })
+            .on('progress', (progress) => {
+                console.log(`[extractAudio] Processing: ${progress.percent?.toFixed(1)}% done`);
+            })
             .on('end', () => {
+                console.log(`[extractAudio] Completed: ${outputPath}`);
                 resolve({
                     success: true,
                     outputPath: outputPath,
                     filename: path.basename(outputPath)
                 });
             })
-            .on('error', (err) => {
+            .on('error', (err, stdout, stderr) => {
+                console.error(`[extractAudio] Error: ${err.message}`);
+                console.error(`[extractAudio] stderr: ${stderr}`);
                 reject(new Error(`Audio extraction failed: ${err.message}`));
             })
             .save(outputPath);

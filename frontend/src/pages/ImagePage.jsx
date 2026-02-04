@@ -116,9 +116,34 @@ function ImagePage() {
             status: 'processing'
         })
 
+        // Simulated processing progress (50% to 90%)
+        let processingInterval = null
+        const startProcessingProgress = () => {
+            let currentProgress = 50
+            processingInterval = setInterval(() => {
+                currentProgress += 2
+                if (currentProgress >= 90) {
+                    clearInterval(processingInterval)
+                    currentProgress = 90
+                }
+                setProgress(currentProgress)
+            }, 200)
+        }
+
         try {
-            setProgress(30)
-            const response = await imageAPI.pdfToImage(files[0], outputFormat)
+            // Track upload progress (0-50%)
+            const onProgress = (uploadPercent) => {
+                const uploadProgress = Math.round(uploadPercent * 0.5)
+                setProgress(uploadProgress)
+                if (uploadPercent >= 100 && !processingInterval) {
+                    startProcessingProgress()
+                }
+            }
+
+            setProgress(1) // Start progress
+            const response = await imageAPI.pdfToImage(files[0], outputFormat, null, onProgress)
+
+            if (processingInterval) clearInterval(processingInterval)
             setProgress(100)
 
             setResult({
@@ -131,6 +156,7 @@ function ImagePage() {
 
             updateConversion(conversionId, { status: 'success' })
         } catch (err) {
+            if (processingInterval) clearInterval(processingInterval)
             setError(err.message)
             updateConversion(conversionId, { status: 'error' })
         } finally {
@@ -153,9 +179,34 @@ function ImagePage() {
             status: 'processing'
         })
 
+        // Simulated processing progress (50% to 90%)
+        let processingInterval = null
+        const startProcessingProgress = () => {
+            let currentProgress = 50
+            processingInterval = setInterval(() => {
+                currentProgress += 2
+                if (currentProgress >= 90) {
+                    clearInterval(processingInterval)
+                    currentProgress = 90
+                }
+                setProgress(currentProgress)
+            }, 200)
+        }
+
         try {
-            setProgress(30)
-            const response = await imageAPI.imageToPdf(files)
+            // Track upload progress (0-50%)
+            const onProgress = (uploadPercent) => {
+                const uploadProgress = Math.round(uploadPercent * 0.5)
+                setProgress(uploadProgress)
+                if (uploadPercent >= 100 && !processingInterval) {
+                    startProcessingProgress()
+                }
+            }
+
+            setProgress(1) // Start progress
+            const response = await imageAPI.imageToPdf(files, onProgress)
+
+            if (processingInterval) clearInterval(processingInterval)
             setProgress(100)
 
             setResult({
@@ -165,6 +216,7 @@ function ImagePage() {
 
             updateConversion(conversionId, { status: 'success' })
         } catch (err) {
+            if (processingInterval) clearInterval(processingInterval)
             setError(err.message)
             updateConversion(conversionId, { status: 'error' })
         } finally {

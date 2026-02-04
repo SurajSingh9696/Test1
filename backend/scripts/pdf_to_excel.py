@@ -1,24 +1,60 @@
 #!/usr/bin/env python3
 """
-PDF to Excel/CSV converter using tabula-py library.
+PDF to Excel/CSV converter using pdfplumber (primary) or tabula-py (fallback).
 Extracts tables from PDF and saves as XLSX or CSV.
 Usage: python pdf_to_excel.py <input_pdf> <output_xlsx_or_csv>
 """
 
 import sys
-import tabula
 import pandas as pd
 from pathlib import Path
+
+def extract_tables_with_pdfplumber(pdf_path):
+    """Extract tables using pdfplumber (pure Python, no Java)."""
+    try:
+        import pdfplumber
+        tables = []
+        
+        with pdfplumber.open(pdf_path) as pdf:
+            for page in pdf.pages:
+                page_tables = page.extract_tables()
+                for table in page_tables:
+                    if table and len(table) > 0:
+                        # Convert to DataFrame, using first row as header if it looks like headers
+                        df = pd.DataFrame(table[1:], columns=table[0])
+                        tables.append(df)
+        
+        print(f"pdfplumber extracted {len(tables)} table(s)")
+        return tables
+    except ImportError:
+        print("pdfplumber not available, falling back to tabula", file=sys.stderr)
+        return None
+    except Exception as e:
+        print(f"pdfplumber error: {e}, trying tabula", file=sys.stderr)
+        return None
+
+def extract_tables_with_tabula(pdf_path):
+    """Extract tables using tabula-py (requires Java)."""
+    try:
+        import tabula
+        tables = tabula.read_pdf(pdf_path, pages='all', multiple_tables=True)
+        print(f"tabula extracted {len(tables)} table(s)")
+        return tables
+    except Exception as e:
+        print(f"tabula error: {e}", file=sys.stderr)
+        return None
 
 def convert_pdf_to_excel(pdf_path, output_path):
     """Extract tables from PDF and save as Excel or CSV."""
     try:
-        # Read all tables from PDF
-        tables = tabula.read_pdf(pdf_path, pages='all', multiple_tables=True)
+        # Try pdfplumber first (no Java required), then tabula as fallback
+        tables = extract_tables_with_pdfplumber(pdf_path)
+        
+        if tables is None:
+            tables = extract_tables_with_tabula(pdf_path)
         
         if not tables or len(tables) == 0:
             print("No tables found in PDF. Creating empty file.", file=sys.stderr)
-            # Create empty dataframe if no tables found
             tables = [pd.DataFrame()]
         
         output_ext = Path(output_path).suffix.lower()
@@ -54,3 +90,4 @@ if __name__ == "__main__":
     
     success = convert_pdf_to_excel(input_pdf, output_file)
     sys.exit(0 if success else 1)
+
