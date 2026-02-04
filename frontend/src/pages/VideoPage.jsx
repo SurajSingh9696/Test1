@@ -53,9 +53,34 @@ function VideoPage() {
             status: 'processing'
         })
 
+        // Simulated processing progress (50% to 90%)
+        let processingInterval = null
+        const startProcessingProgress = () => {
+            let currentProgress = 50
+            processingInterval = setInterval(() => {
+                currentProgress += 2
+                if (currentProgress >= 90) {
+                    clearInterval(processingInterval)
+                    currentProgress = 90
+                }
+                setProgress(currentProgress)
+            }, 200)
+        }
+
         try {
-            setProgress(30)
-            const response = await videoAPI.convert(files[0], outputFormat, options)
+            // Track upload progress (0-50%)
+            const onProgress = (uploadPercent) => {
+                const uploadProgress = Math.round(uploadPercent * 0.5)
+                setProgress(uploadProgress)
+                if (uploadPercent >= 100 && !processingInterval) {
+                    startProcessingProgress()
+                }
+            }
+
+            setProgress(1)
+            const response = await videoAPI.convert(files[0], outputFormat, options, onProgress)
+
+            if (processingInterval) clearInterval(processingInterval)
             setProgress(100)
 
             setResult({
@@ -65,6 +90,7 @@ function VideoPage() {
 
             updateConversion(conversionId, { status: 'success' })
         } catch (err) {
+            if (processingInterval) clearInterval(processingInterval)
             setError(err.message)
             updateConversion(conversionId, { status: 'error' })
         } finally {
@@ -80,9 +106,34 @@ function VideoPage() {
         setError(null)
         setResult(null)
 
+        // Simulated processing progress (50% to 90%)
+        let processingInterval = null
+        const startProcessingProgress = () => {
+            let currentProgress = 50
+            processingInterval = setInterval(() => {
+                currentProgress += 2
+                if (currentProgress >= 90) {
+                    clearInterval(processingInterval)
+                    currentProgress = 90
+                }
+                setProgress(currentProgress)
+            }, 200)
+        }
+
         try {
-            setProgress(30)
-            const response = await videoAPI.extractAudio(files[0], 'mp3')
+            // Track upload progress (0-50%)
+            const onProgress = (uploadPercent) => {
+                const uploadProgress = Math.round(uploadPercent * 0.5)
+                setProgress(uploadProgress)
+                if (uploadPercent >= 100 && !processingInterval) {
+                    startProcessingProgress()
+                }
+            }
+
+            setProgress(1)
+            const response = await videoAPI.extractAudio(files[0], 'mp3', onProgress)
+
+            if (processingInterval) clearInterval(processingInterval)
             setProgress(100)
 
             setResult({
@@ -90,6 +141,7 @@ function VideoPage() {
                 downloadUrl: downloadFile(response.data.filename)
             })
         } catch (err) {
+            if (processingInterval) clearInterval(processingInterval)
             setError(err.message)
         } finally {
             setIsConverting(false)

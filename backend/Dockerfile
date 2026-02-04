@@ -5,6 +5,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libreoffice \
     poppler-utils \
     ffmpeg \
+    libavcodec-extra \
     fontconfig \
     fonts-dejavu-core \
     fonts-liberation \

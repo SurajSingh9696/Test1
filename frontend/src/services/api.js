@@ -4,7 +4,7 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || '/api'
 
 const api = axios.create({
     baseURL: API_BASE_URL,
-    timeout: 600000 // 10 minutes for large file conversions
+    timeout: 1800000 // 30 minutes for large video conversions
 })
 
 api.interceptors.response.use(
@@ -16,11 +16,16 @@ api.interceptors.response.use(
 )
 
 export const documentAPI = {
-    convert: (file, outputFormat) => {
+    convert: (file, outputFormat, onProgress = null) => {
         const formData = new FormData()
         formData.append('file', file)
         formData.append('outputFormat', outputFormat)
-        return api.post('/documents/convert', formData)
+        return api.post('/documents/convert', formData, {
+            onUploadProgress: onProgress ? (progressEvent) => {
+                const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total)
+                onProgress(percentCompleted)
+            } : undefined
+        })
     },
 
     docxToHtml: (file) => {
@@ -135,7 +140,7 @@ export const imageAPI = {
 }
 
 export const audioAPI = {
-    convert: (file, outputFormat, options = {}) => {
+    convert: (file, outputFormat, options = {}, onProgress = null) => {
         const formData = new FormData()
         formData.append('file', file)
         formData.append('outputFormat', outputFormat)
@@ -144,7 +149,12 @@ export const audioAPI = {
                 formData.append(key, value)
             }
         })
-        return api.post('/audio/convert', formData)
+        return api.post('/audio/convert', formData, {
+            onUploadProgress: onProgress ? (progressEvent) => {
+                const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total)
+                onProgress(percentCompleted)
+            } : undefined
+        })
     },
 
     trim: (file, startTime, duration) => {
@@ -172,7 +182,7 @@ export const audioAPI = {
 }
 
 export const videoAPI = {
-    convert: (file, outputFormat, options = {}) => {
+    convert: (file, outputFormat, options = {}, onProgress = null) => {
         const formData = new FormData()
         formData.append('file', file)
         formData.append('outputFormat', outputFormat)
@@ -181,7 +191,12 @@ export const videoAPI = {
                 formData.append(key, value)
             }
         })
-        return api.post('/video/convert', formData)
+        return api.post('/video/convert', formData, {
+            onUploadProgress: onProgress ? (progressEvent) => {
+                const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total)
+                onProgress(percentCompleted)
+            } : undefined
+        })
     },
 
     compress: (file, quality) => {
@@ -199,11 +214,16 @@ export const videoAPI = {
         return api.post('/video/trim', formData)
     },
 
-    extractAudio: (file, outputFormat) => {
+    extractAudio: (file, outputFormat, onProgress = null) => {
         const formData = new FormData()
         formData.append('file', file)
         formData.append('outputFormat', outputFormat)
-        return api.post('/video/extract-audio', formData)
+        return api.post('/video/extract-audio', formData, {
+            onUploadProgress: onProgress ? (progressEvent) => {
+                const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total)
+                onProgress(percentCompleted)
+            } : undefined
+        })
     },
 
     changeResolution: (file, resolution) => {

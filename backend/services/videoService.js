@@ -9,6 +9,7 @@ const convertVideo = (inputPath, outputFormat, options = {}) => {
 
         let command = ffmpeg(inputPath);
 
+        // Resolution settings
         if (options.resolution) {
             const resolutions = {
                 '4k': '3840x2160',
@@ -33,12 +34,57 @@ const convertVideo = (inputPath, outputFormat, options = {}) => {
             command = command.fps(parseInt(options.fps));
         }
 
+        // Format-specific optimizations for faster encoding
+        const format = outputFormat.toLowerCase();
+
+        if (format === 'webm') {
+            // WebM: Use libvpx with fast encoding settings
+            command = command
+                .videoCodec('libvpx')
+                .audioCodec('libvorbis')
+                .outputOptions([
+                    '-cpu-used 4',        // Faster encoding (0-5, higher = faster)
+                    '-deadline realtime', // Fastest encoding mode
+                    '-crf 30',            // Quality (lower = better, 10-63)
+                    '-b:v 1M'             // Video bitrate
+                ]);
+        } else if (format === 'mp4') {
+            // MP4: Use fast H.264 encoding
+            command = command
+                .videoCodec('libx264')
+                .audioCodec('aac')
+                .outputOptions([
+                    '-preset fast',       // Faster encoding preset
+                    '-crf 23',            // Quality
+                    '-movflags +faststart' // Web optimization
+                ]);
+        } else if (format === 'mkv') {
+            // MKV: Use fast H.264 encoding
+            command = command
+                .videoCodec('libx264')
+                .audioCodec('aac')
+                .outputOptions([
+                    '-preset fast',
+                    '-crf 23'
+                ]);
+        } else if (format === 'avi') {
+            // AVI: Use fast MPEG4 encoding
+            command = command
+                .videoCodec('mpeg4')
+                .audioCodec('mp3')
+                .outputOptions(['-q:v 5']);
+        }
+
         command
             .toFormat(outputFormat)
+            .on('start', (cmdLine) => {
+                console.log(`[convertVideo] Starting: ${cmdLine}`);
+            })
             .on('progress', (progress) => {
-                console.log(`Processing: ${progress.percent}% done`);
+                console.log(`[convertVideo] Processing: ${progress.percent?.toFixed(1)}% done`);
             })
             .on('end', () => {
+                console.log(`[convertVideo] Completed: ${outputPath}`);
                 resolve({
                     success: true,
                     outputPath: outputPath,
@@ -46,6 +92,7 @@ const convertVideo = (inputPath, outputFormat, options = {}) => {
                 });
             })
             .on('error', (err) => {
+                console.error(`[convertVideo] Error: ${err.message}`);
                 reject(new Error(`Video conversion failed: ${err.message}`));
             })
             .save(outputPath);
