@@ -1,38 +1,37 @@
-FROM node:18-alpine
+FROM node:18-slim
 
-# Install LibreOffice, poppler-utils (PDF), ffmpeg with full codecs (audio/video), Java with AWT support, and Python
-# Build dependencies are installed temporarily for opencv-python-headless
-RUN apk add --no-cache \
+# Install system dependencies: LibreOffice, poppler-utils (PDF), ffmpeg (audio/video), Java, and Python
+RUN apt-get update && apt-get install -y --no-install-recommends \
     libreoffice \
     poppler-utils \
     ffmpeg \
-    ffmpeg-libs \
-    lame \
-    lame-libs \
     fontconfig \
-    ttf-dejavu \
-    ttf-liberation \
+    fonts-dejavu \
+    fonts-liberation \
     python3 \
-    py3-pip \
-    # Use full JDK with AWT support for tabula-java image processing
-    openjdk11-jdk \
-    # Required for Java AWT/image handling
-    libjpeg-turbo \
-    libpng \
-    freetype \
-    # Build dependencies for opencv-python-headless
-    && apk add --no-cache --virtual .build-deps \
-    gcc \
-    g++ \
-    cmake \
-    make \
-    musl-dev \
-    python3-dev \
-    linux-headers \
-    && pip3 install --no-cache-dir --break-system-packages pdf2docx tabula-py pandas openpyxl python-docx reportlab pdf2image python-pptx beautifulsoup4 lxml pdfplumber \
-    # Remove build dependencies to keep image smaller
-    && apk del .build-deps \
-    && rm -rf /var/cache/apk/*
+    python3-pip \
+    python3-venv \
+    # Full JDK for tabula-java image processing
+    openjdk-11-jdk-headless \
+    # Required for image processing
+    libjpeg62-turbo \
+    libpng16-16 \
+    libfreetype6 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python packages (pre-built wheels available on Debian)
+RUN pip3 install --no-cache-dir --break-system-packages \
+    pdf2docx \
+    tabula-py \
+    pandas \
+    openpyxl \
+    python-docx \
+    reportlab \
+    pdf2image \
+    python-pptx \
+    beautifulsoup4 \
+    lxml \
+    pdfplumber
 
 WORKDIR /app
 
