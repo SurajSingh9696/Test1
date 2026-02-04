@@ -163,12 +163,18 @@ router.post('/pdf-to-image', upload.single('file'), async (req, res, next) => {
 
         const result = await imageService.pdfToImage(req.file.path, format, options);
 
+        const message = result.isZip
+            ? `PDF converted to ${result.pageCount} images (ZIP download)`
+            : 'PDF converted to image successfully';
+
         res.json({
             success: true,
-            message: 'PDF converted to image successfully',
+            message: message,
             files: result.files,
             filename: result.filename,
-            downloadUrl: `/api/download/${result.filename}`
+            downloadUrl: `/api/download/${result.filename}`,
+            isZip: result.isZip,
+            pageCount: result.pageCount
         });
     } catch (error) {
         next(error);

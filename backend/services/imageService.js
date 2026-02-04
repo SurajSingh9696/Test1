@@ -151,6 +151,7 @@ const pdfToImage = async (inputPath, outputFormat = 'png', options = {}) => {
     const { exec } = require('child_process');
     const util = require('util');
     const execPromise = util.promisify(exec);
+    const archiver = require('archiver');
 
     const outputDir = config.convertedDir;
     const scriptPath = path.join(__dirname, '..', 'scripts', 'pdf_to_image.py');
@@ -180,17 +181,55 @@ const pdfToImage = async (inputPath, outputFormat = 'png', options = {}) => {
             throw new Error('PDF to image conversion produced no output');
         }
 
+        // If multiple pages, create a ZIP file
+        if (files.length > 1) {
+            const baseName = path.basename(inputPath, path.extname(inputPath));
+            const timestamp = Date.now();
+            const zipFilename = `${baseName}_images_${timestamp}.zip`;
+            const zipPath = path.join(outputDir, zipFilename);
+
+            // Create ZIP file
+            await new Promise((resolve, reject) => {
+                const output = fs.createWriteStream(zipPath);
+                const archive = archiver('zip', { zlib: { level: 9 } });
+
+                output.on('close', resolve);
+                archive.on('error', reject);
+
+                archive.pipe(output);
+                for (const file of files) {
+                    archive.file(file.outputPath, { name: file.filename });
+                }
+                archive.finalize();
+            });
+
+            console.log(`[pdfToImage] Created ZIP with ${files.length} images: ${zipFilename}`);
+
+            return {
+                success: true,
+                files: files,
+                isZip: true,
+                outputPath: zipPath,
+                filename: zipFilename,
+                pageCount: files.length
+            };
+        }
+
+        // Single page - return the image directly
         return {
             success: true,
             files: files,
+            isZip: false,
             outputPath: files[0].outputPath,
-            filename: files[0].filename
+            filename: files[0].filename,
+            pageCount: 1
         };
     } catch (error) {
         console.error(`[pdfToImage] Error: ${error.message}`);
         throw new Error(`PDF to image conversion failed: ${error.message}`);
     }
 };
+
 
 // Image to PDF conversion (supports multiple images)
 const imageToPdf = async (inputPaths) => {

@@ -123,7 +123,10 @@ function ImagePage() {
 
             setResult({
                 filename: response.data.filename,
-                downloadUrl: downloadFile(response.data.filename)
+                downloadUrl: downloadFile(response.data.filename),
+                isZip: response.data.isZip,
+                pageCount: response.data.pageCount,
+                message: response.data.message
             })
 
             updateConversion(conversionId, { status: 'success' })
@@ -177,6 +180,10 @@ function ImagePage() {
         setConversionMode('image')
     }
 
+    const removeFile = (index) => {
+        setFiles(prev => prev.filter((_, i) => i !== index))
+    }
+
     const getAcceptTypes = () => {
         if (conversionMode === 'pdfToImage') return '.pdf'
         return 'image/*,.heic,.heif'
@@ -214,6 +221,7 @@ function ImagePage() {
                                     <FileUploader
                                         onFilesSelected={handleFilesSelected}
                                         accept={getAcceptTypes()}
+                                        multiple={conversionMode === 'imageToPdf'}
                                     />
 
                                     {files.length > 0 && (
@@ -222,25 +230,52 @@ function ImagePage() {
                                             initial={{ opacity: 0, y: 10 }}
                                             animate={{ opacity: 1, y: 0 }}
                                         >
-                                            <h3>Selected Image</h3>
-                                            <div className="file-item">
-                                                <div className="file-info">
-                                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                                        <rect x="3" y="3" width="18" height="18" rx="2" />
-                                                        <circle cx="8.5" cy="8.5" r="1.5" />
-                                                    </svg>
-                                                    <span className="file-name">{files[0].name}</span>
-                                                    <span className="file-size">
-                                                        {(files[0].size / 1024 / 1024).toFixed(2)} MB
-                                                    </span>
+                                            <h3>{conversionMode === 'imageToPdf' ? `Selected Images (${files.length})` : 'Selected File'}</h3>
+                                            {conversionMode === 'imageToPdf' ? (
+                                                // Show all files for image-to-PDF mode
+                                                <div className="files-list">
+                                                    {files.map((file, index) => (
+                                                        <div className="file-item" key={index}>
+                                                            <div className="file-info">
+                                                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                                    <rect x="3" y="3" width="18" height="18" rx="2" />
+                                                                    <circle cx="8.5" cy="8.5" r="1.5" />
+                                                                </svg>
+                                                                <span className="file-name">{file.name}</span>
+                                                                <span className="file-size">
+                                                                    {(file.size / 1024 / 1024).toFixed(2)} MB
+                                                                </span>
+                                                            </div>
+                                                            <button className="remove-file" onClick={() => removeFile(index)}>
+                                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                                    <line x1="18" y1="6" x2="6" y2="18" />
+                                                                    <line x1="6" y1="6" x2="18" y2="18" />
+                                                                </svg>
+                                                            </button>
+                                                        </div>
+                                                    ))}
                                                 </div>
-                                                <button className="remove-file" onClick={() => setFiles([])}>
-                                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                                        <line x1="18" y1="6" x2="6" y2="18" />
-                                                        <line x1="6" y1="6" x2="18" y2="18" />
-                                                    </svg>
-                                                </button>
-                                            </div>
+                                            ) : (
+                                                // Show single file for other modes
+                                                <div className="file-item">
+                                                    <div className="file-info">
+                                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                            <rect x="3" y="3" width="18" height="18" rx="2" />
+                                                            <circle cx="8.5" cy="8.5" r="1.5" />
+                                                        </svg>
+                                                        <span className="file-name">{files[0].name}</span>
+                                                        <span className="file-size">
+                                                            {(files[0].size / 1024 / 1024).toFixed(2)} MB
+                                                        </span>
+                                                    </div>
+                                                    <button className="remove-file" onClick={() => setFiles([])}>
+                                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                            <line x1="18" y1="6" x2="6" y2="18" />
+                                                            <line x1="6" y1="6" x2="18" y2="18" />
+                                                        </svg>
+                                                    </button>
+                                                </div>
+                                            )}
                                         </motion.div>
                                     )}
                                 </motion.div>
@@ -257,7 +292,9 @@ function ImagePage() {
                                         </svg>
                                     </div>
                                     <h3>Conversion Complete!</h3>
-                                    <p>Your image has been processed successfully</p>
+                                    <p>{result.message || (result.isZip
+                                        ? `${result.pageCount} pages converted to images (ZIP archive)`
+                                        : 'Your file has been processed successfully')}</p>
                                     <div className="result-actions">
                                         <a href={result.downloadUrl} className="btn btn-primary btn-lg" download>
                                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -265,7 +302,7 @@ function ImagePage() {
                                                 <polyline points="7,10 12,15 17,10" />
                                                 <line x1="12" y1="15" x2="12" y2="3" />
                                             </svg>
-                                            Download Image
+                                            {result.isZip ? 'Download ZIP' : 'Download'}
                                         </a>
                                         <button className="btn btn-secondary" onClick={handleReset}>
                                             Convert Another
